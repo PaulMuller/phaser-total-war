@@ -130,7 +130,7 @@ export function splitLineProportionally(desiredLine, unitCounts, spacing) {
 }
 
 export function drawDestinationMarker(graphics, target, radius = 5) {
-    graphics.fillStyle(0x00ff00, 0.5)
+    graphics.fillStyle(0x00ff00, 0.5    )
     drawTriangle(graphics, target.x, target.y, target.angle || Math.PI)
     graphics.fillEllipse(target.x, target.y, 20, 10); // Math.PI/6 is 30 degrees
     // graphics.fillCircle(target.x, target.y, radius * 2)

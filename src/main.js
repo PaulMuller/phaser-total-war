@@ -7,15 +7,15 @@ import { Game } from './scenes/Game'
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config = {
     type: Phaser.AUTO,
-    width: 1024,
-    height: 768,
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        width: '100vw',
+        height: '100vh',
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     parent: 'game-container',
     backgroundColor: '#222255',
     // pixelArt: true,
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    },
     physics: {
         default: 'arcade',
         arcade: { 
@@ -34,5 +34,7 @@ const game = new Phaser.Game(config)
 
 
 game.canvas.addEventListener('contextmenu', e => e.preventDefault() )
+
+window.addEventListener('resize', () => game.scale.refresh())
 
 export default game

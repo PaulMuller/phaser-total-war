@@ -1,4 +1,4 @@
-import { DIRECTIONS, isInsideEllipse, getDirectionFromRad, drawTriangle } from '../utils'
+import { getDirectionFromRad } from '../utils'
 
 export class UnitV3 extends Phaser.Physics.Arcade.Sprite{
     constructor(scene, x, y, angle, unitType = 'goblin_spearman') {
@@ -10,7 +10,6 @@ export class UnitV3 extends Phaser.Physics.Arcade.Sprite{
         this.scene.add.existing(this)
         this.scene.physics.add.existing(this)
 
-        
         this.unitType = unitType
         this.bodyRadius = 3
         this.body.setCircle(

@@ -9,6 +9,7 @@ import {
     splitLineProportionally
 } from '../utils'
 import { StrategyCameraController } from '../modules/StrategyCameraController'
+import { Minimap } from '../modules/Minimap'
 
 const UNIT_NAMES = {
     GOBLIN_SPEARMAN: 'goblin_spearman',
@@ -25,22 +26,19 @@ export class Game extends Phaser.Scene {
     create () {
         this.squads = []
         this.masterGroup = this.physics.add.group()
+        
         this.createWorld()
+        this.minimap = new Minimap(this)
         
         // this.setupBoxSelection()
-        // this.setupFormationPositioning()
-        
-        this.squads.push(
-            this.spawnSquad(10, { x1: 100, y1: 300, x2: 200, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
-            this.spawnSquad(3,  { x1: 200, y1: 300, x2: 300, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
-            this.spawnSquad(10, { x1: 300, y1: 300, x2: 400, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
-            this.spawnSquad(15, { x1: 400, y1: 300, x2: 500, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
-            this.spawnSquad(1,  { x1: 500, y1: 300, x2: 600, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
-            this.spawnSquad(10, { x1: 600, y1: 300, x2: 700, y2: 300 }, UNIT_NAMES.GOBLIN_BOWMAN),
-        )
-
         this.setupFormationPositioning()
 
+        this.squads.push(
+            this.spawnSquad(20, { x1: 100, y1: 300, x2: 200, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
+            this.spawnSquad(19, { x1: 600, y1: 300, x2: 700, y2: 300 }, UNIT_NAMES.GOBLIN_BOWMAN),
+        )
+
+        // const mapMainLayer = this.map.getLayer('floor')
         this.cameraController = new StrategyCameraController(this, {
             keyboardSpeed: 300,
             edgeSpeed: 250,
@@ -48,19 +46,20 @@ export class Game extends Phaser.Scene {
             minZoom: 0.25,
             maxZoom: 2,
             zoomSpeed: 0.1,
-            worldBounds: null
-        });
+            worldBounds:null
+        })
 
     }
 
     spawnSquad(unitCount, line, unitName) {
         const unitsGroup = this.physics.add.group({ runChildUpdate: true })
         this.physics.add.collider(unitsGroup, this.masterGroup)
-
-        const tmpTargets = this.formSquadFormation(undefined, createObjects(unitCount), line)
+        const tmpTargets = this.formSquadFormation(unitCount, line)
 
         for(let i = 0; i < unitCount; i++){ 
-            unitsGroup.add( new UnitV3(this, tmpTargets[i].x, tmpTargets[i].y, tmpTargets[i].angle, unitName))
+            const unit = new UnitV3(this, tmpTargets[i].x, tmpTargets[i].y, tmpTargets[i].angle, unitName)
+            unitsGroup.add(unit)
+            this.minimap.addObject(unit, 0x00ff00)
         }
 
         unitsGroup.isSelected = true
@@ -122,11 +121,17 @@ export class Game extends Phaser.Scene {
 
             const selectedSquads = this.squads.filter(squad => squad.isSelected)
 
-            this.formArmyFormation(graphics, selectedSquads, {
+            const tmpTargets = this.formArmyFormation(selectedSquads, {
                 x1: startDragX, 
                 y1: startDragY, 
                 x2: pointer.worldX, 
                 y2: pointer.worldY
+            })
+
+            selectedSquads.forEach( (squad, squadIndex) => {
+                squad.getChildren().forEach( (unit, index) =>{
+                    drawDestinationMarker(graphics, tmpTargets[squadIndex][index], 5)
+                })
             })
         })
     
@@ -137,7 +142,7 @@ export class Game extends Phaser.Scene {
 
             const selectedSquads = this.squads.filter(squad => squad.isSelected)
 
-            const tmpTargets = this.formArmyFormation(graphics, selectedSquads, {
+            const tmpTargets = this.formArmyFormation(selectedSquads, {
                 x1: startDragX, 
                 y1: startDragY, 
                 x2: pointer.worldX, 
@@ -147,33 +152,29 @@ export class Game extends Phaser.Scene {
             selectedSquads.forEach( (squad, squadIndex) => {
                 squad.getChildren().forEach( (unit, index) =>{
                     unit.setTarget(tmpTargets[squadIndex][index])
+                    drawDestinationMarker(graphics, tmpTargets[squadIndex][index], 5)
                 })
             })
-
-
         })  
     }
 
-    formArmyFormation(graphics, groups, desiredLine){
+    formArmyFormation(groups, desiredLine){
         const result = []
         const unitCounts = groups.map(group => group.getChildren().length)
         const squadLines = splitLineProportionally(desiredLine, unitCounts, unitSpace)
 
         groups.forEach( (group, index) => {
-            result.push(this.formSquadFormation(graphics, group, squadLines[index]))
+            result.push(this.formSquadFormation(group.getChildren().length, squadLines[index]))
         })
 
         return result
     }
 
-    formSquadFormation(graphics, group, desiredLine) {   
-        // separate creation and marking, dismiss 'isPhysicsGroup', use 'PhysicsGroup' only 
-        const isPhysicsGroup = typeof group.getChildren == 'function'
-        const unitsCount = isPhysicsGroup ? group.getChildren().length : group.length
+    formSquadFormation(count, desiredLine) {   
         const lineLenght = Phaser.Math.Distance.Between( desiredLine.x1, desiredLine.y1, desiredLine.x2, desiredLine.y2 )
 
         const unitsInLine = Math.max(Math.ceil(lineLenght / unitSpace) - 1, 2)
-        const tmpTargets = createObjects(unitsCount)
+        const tmpTargets = createObjects(count)
         const unitChunks = splitIntoChunk(tmpTargets, unitsInLine)
         
         unitChunks.forEach( (chunkOfUnits, row) => {
@@ -196,13 +197,6 @@ export class Game extends Phaser.Scene {
             Phaser.Actions.PlaceOnLine(chunkOfUnits, parallelLine)
         })
         
-        if ( isPhysicsGroup ) {
-            group.getChildren().forEach( (unit, index) =>{
-                drawDestinationMarker(graphics, tmpTargets[index], 5)
-            })
-        }
-
-
         return tmpTargets
     }
 
@@ -226,6 +220,7 @@ export class Game extends Phaser.Scene {
     }
 
     update(time, delta){
-        this.cameraController.update(time, delta);
+        this.cameraController.update(time, delta)
+        this.minimap.update(time, delta)
     }
 }
