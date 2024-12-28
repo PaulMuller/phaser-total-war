@@ -1,4 +1,4 @@
-import { UnitV3 } from '../units/UnitsV3'
+import UnitV4 from '../units/UnitV4'
 import { 
     createObjects, 
     getLineAngle, 
@@ -10,6 +10,7 @@ import {
 } from '../utils'
 import { StrategyCameraController } from '../modules/StrategyCameraController'
 import { Minimap } from '../modules/Minimap'
+import IsoPlugin, { IsoPhysics } from '../plugins/IsometricProjector/IsoPlugin'
 
 const UNIT_NAMES = {
     GOBLIN_SPEARMAN: 'goblin_spearman',
@@ -20,12 +21,25 @@ const unitSpace = 30
 
 export class Game extends Phaser.Scene {
     constructor () {
-        super('Game')
+        const sceneConfig = {
+            key: 'Game',
+            mapAdd: { isoPlugin: 'iso', isoPhysics: 'isoPhysics' }
+        }
+      
+        super(sceneConfig)
+    }
+
+    preload() {
+        this.load.scenePlugin({ key: 'IsoPlugin', url: IsoPlugin, sceneKey: 'iso' })
+        this.load.scenePlugin({ key: 'IsoPhysics', url: IsoPhysics, sceneKey: 'isoPhysics' })
     }
 
     create () {
         this.squads = []
-        this.masterGroup = this.physics.add.group()
+        this.masterGroup = this.add.group()
+
+        this.isoPhysics.world.gravity.setTo(0, 0, 0)
+        this.iso.projector.origin.setTo(0.5, 0.5)
         
         this.createWorld()
         this.minimap = new Minimap(this)
@@ -52,12 +66,11 @@ export class Game extends Phaser.Scene {
     }
 
     spawnSquad(unitCount, line, unitName) {
-        const unitsGroup = this.physics.add.group({ runChildUpdate: true })
-        this.physics.add.collider(unitsGroup, this.masterGroup)
+        const unitsGroup = this.add.group()
         const tmpTargets = this.formSquadFormation(unitCount, line)
 
         for(let i = 0; i < unitCount; i++){ 
-            const unit = new UnitV3(this, tmpTargets[i].x, tmpTargets[i].y, tmpTargets[i].angle, unitName)
+            const unit = new UnitV4(this, tmpTargets[i].x, tmpTargets[i].y, tmpTargets[i].angle, unitName)
             unitsGroup.add(unit)
             this.minimap.addObject(unit, 0x00ff00)
         }
@@ -222,5 +235,6 @@ export class Game extends Phaser.Scene {
     update(time, delta){
         this.cameraController.update(time, delta)
         this.minimap.update(time, delta)
+        this.isoPhysics.world.collide(this.masterGroup)
     }
 }

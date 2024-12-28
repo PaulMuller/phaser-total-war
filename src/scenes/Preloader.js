@@ -27,6 +27,7 @@ export class Preloader extends Scene {
         this.load.image('logo', 'logo.png')
         // this.load.image('desertTileset', 'tilemaps/desert.png')
         this.load.image('desertTileset', 'tilemaps/desertIso.png')
+        this.load.image('city', 'buildings/human-city.png');
         this.load.spritesheet('goblin_spearman', 'units/goblin_spearman.png', { frameWidth: 128, frameHeight: 128 })
         this.load.spritesheet('goblin_bowman', 'units/goblin_bowman.png', { frameWidth: 128, frameHeight: 128 })
     }

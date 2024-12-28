@@ -1,28 +1,25 @@
 import { getDirectionFromRad } from '../utils'
+import IsoSprite from '../plugins/IsometricProjector/IsoSprite'
 
-export class UnitV3 extends Phaser.Physics.Arcade.Sprite{
+export default class UnitV4 extends IsoSprite{
     constructor(scene, x, y, angle, unitType = 'goblin_spearman') {
-        super(scene, x, y, unitType, 0)
-
-        scene.masterGroup.add(this)
-
+        super(scene, x, y, 0, unitType, 0)
         this.scene = scene
-        this.scene.add.existing(this)
-        this.scene.physics.add.existing(this)
+
+        this.scene.masterGroup.add(this)
+        this.scene.isoPhysics.world.enable(this)
+        this.body.collideWorldBounds = true
+        this.body.bounce.set(0.2, 0.2, 0)   
+
+        const pluginKey = this.scene.sys.settings.map.isoPlugin
+        this.scene[pluginKey].systems.displayList.add(this)
+        this.scene[pluginKey].systems.updateList.add(this)
+
 
         this.unitType = unitType
-        this.bodyRadius = 3
-        this.body.setCircle(
-            this.bodyRadius * 2,
-            (this.width  - this.bodyRadius * 4) / 2,
-            (this.height + this.bodyRadius * 18) / 2
-        )
-        this.body.pushable = true
-
         this.play(`${unitType}-${getDirectionFromRad(angle)}-idle`)
 
         this.speed = 40
-        this.body.setSlideFactor(0.25)
         this.target = null
     }
 
@@ -65,11 +62,10 @@ export class UnitV3 extends Phaser.Physics.Arcade.Sprite{
             this.body.velocity.x = 0
             this.body.velocity.y = 0
         }
-       
-    
     }
 
     update(delta, time) {
         this.move() 
+        console.log(this.body.velocity)
     }
 }
