@@ -14,7 +14,9 @@ export class MainMenu extends Scene {
 
         // this.input.once('pointerdown', () => {
             this.scene.start('Game')
-            this.scene.launch('HUD')
+            this.scene.start('IsometricGame')
+
+            // this.scene.launch('HUD')
         // })
     }
 }
