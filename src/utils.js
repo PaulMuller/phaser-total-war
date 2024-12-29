@@ -1,3 +1,5 @@
+import Point3 from "./plugins/IsometricProjector/Point3"
+
 export const DIRECTIONS = {
     W: 'W',
     NW: 'NW',
@@ -14,7 +16,11 @@ export const createObjects = (n) => Array.from({ length: n }, () => (new Object(
     y: 0
 })))
 
+export const createIsoObjects = (n) => Array.from({ length: n }, () => new Point3())
+
 export function drawTriangle(graphics, centerX, centerY, angle, size = 10) {
+
+    angle = angle + Math.PI / 4
     // Calculate the three points from the offset center
     const topX = centerX + Math.cos(angle) * size * 1.5
     const topY = centerY + Math.sin(angle) * size * 0.9
@@ -60,8 +66,6 @@ export function calculateConstrainedLine(startX, startY, endX, endY, minLength, 
 
     return {x1: startX, y1: startY, x2: newEndX, y2: newEndY}
 }
-
-
 
 export function modifyLineLength(line, newLength) {
     // Calculate the center of the line
@@ -157,7 +161,7 @@ export function splitIntoChunk(arr, chunk){
 }
 
 export function getDirectionFromRad(radians) {
-    const directionsArray = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE']
+    const directionsArray = ['SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E']
     const segment = (2 * Math.PI) / 8 // Each segment is 45 degrees (π/4 radians)
     
     // Normalize radians to the range [0, 2π)

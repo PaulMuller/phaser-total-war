@@ -1,6 +1,7 @@
 import UnitV4 from '../units/UnitV4'
 import { 
     createObjects, 
+    createIsoObjects,
     getLineAngle, 
     drawDestinationMarker,
     createConstrainedLine,
@@ -48,8 +49,8 @@ export class Game extends Phaser.Scene {
         this.setupFormationPositioning()
 
         this.squads.push(
-            this.spawnSquad(20, { x1: 100, y1: 300, x2: 200, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
-            this.spawnSquad(19, { x1: 600, y1: 300, x2: 700, y2: 300 }, UNIT_NAMES.GOBLIN_BOWMAN),
+            this.spawnSquad(10, { x1: 100, y1: 300, x2: 200, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
+            // this.spawnSquad(19, { x1: 600, y1: 300, x2: 700, y2: 300 }, UNIT_NAMES.GOBLIN_BOWMAN),
         )
 
         // const mapMainLayer = this.map.getLayer('floor')
@@ -66,11 +67,11 @@ export class Game extends Phaser.Scene {
     }
 
     spawnSquad(unitCount, line, unitName) {
-        const unitsGroup = this.add.group()
+        const unitsGroup = this.add.group({runChildUpdate: true})
         const tmpTargets = this.formSquadFormation(unitCount, line)
 
         for(let i = 0; i < unitCount; i++){ 
-            const unit = new UnitV4(this, tmpTargets[i].x, tmpTargets[i].y, tmpTargets[i].angle, unitName)
+            const unit = new UnitV4(this, tmpTargets[i].x, tmpTargets[i].y, 0, tmpTargets[i].angle, unitName)
             unitsGroup.add(unit)
             this.minimap.addObject(unit, 0x00ff00)
         }
@@ -134,16 +135,20 @@ export class Game extends Phaser.Scene {
 
             const selectedSquads = this.squads.filter(squad => squad.isSelected)
 
+            const isoStartDrag    = this.iso.projector.unproject({x: startDragX, y: startDragY})
+            const isoPointerWorld = this.iso.projector.unproject({x:  pointer.worldX, y: pointer.worldY})
+
             const tmpTargets = this.formArmyFormation(selectedSquads, {
-                x1: startDragX, 
-                y1: startDragY, 
-                x2: pointer.worldX, 
-                y2: pointer.worldY
+                x1: isoStartDrag.x, 
+                y1: isoStartDrag.y, 
+                x2: isoPointerWorld.x, 
+                y2: isoPointerWorld.y
             })
 
             selectedSquads.forEach( (squad, squadIndex) => {
                 squad.getChildren().forEach( (unit, index) =>{
-                    drawDestinationMarker(graphics, tmpTargets[squadIndex][index], 5)
+                    const target = tmpTargets[squadIndex][index]
+                    drawDestinationMarker(graphics, target, 5)
                 })
             })
         })
@@ -155,17 +160,21 @@ export class Game extends Phaser.Scene {
 
             const selectedSquads = this.squads.filter(squad => squad.isSelected)
 
+            const isoStartDrag    = this.iso.projector.unproject({x: startDragX, y: startDragY})
+            const isoPointerWorld = this.iso.projector.unproject({x:  pointer.worldX, y: pointer.worldY})
+
             const tmpTargets = this.formArmyFormation(selectedSquads, {
-                x1: startDragX, 
-                y1: startDragY, 
-                x2: pointer.worldX, 
-                y2: pointer.worldY
+                x1: isoStartDrag.x, 
+                y1: isoStartDrag.y, 
+                x2: isoPointerWorld.x, 
+                y2: isoPointerWorld.y
             })
 
             selectedSquads.forEach( (squad, squadIndex) => {
                 squad.getChildren().forEach( (unit, index) =>{
-                    unit.setTarget(tmpTargets[squadIndex][index])
-                    drawDestinationMarker(graphics, tmpTargets[squadIndex][index], 5)
+                    const target = tmpTargets[squadIndex][index]
+                    unit.setTarget(target)
+                    drawDestinationMarker(graphics, target, 5)
                 })
             })
         })  
@@ -185,16 +194,14 @@ export class Game extends Phaser.Scene {
 
     formSquadFormation(count, desiredLine) {   
         const lineLenght = Phaser.Math.Distance.Between( desiredLine.x1, desiredLine.y1, desiredLine.x2, desiredLine.y2 )
-
         const unitsInLine = Math.max(Math.ceil(lineLenght / unitSpace) - 1, 2)
         const tmpTargets = createObjects(count)
         const unitChunks = splitIntoChunk(tmpTargets, unitsInLine)
-        
+        const resultTargets = []
+
         unitChunks.forEach( (chunkOfUnits, row) => {
             let line = createConstrainedLine( desiredLine.x1, desiredLine.y1, desiredLine.x2, desiredLine.y2, unitSpace * unitsInLine)
-            const lineAngle = getLineAngle(line) -  Math.PI / 2
-            chunkOfUnits.forEach( target => target.angle = lineAngle)
-            
+            const lineAngle = getLineAngle(line) - Math.PI / 2
             const offsetX = Math.cos(lineAngle - Math.PI) * unitSpace * row
             const offsetY = Math.sin(lineAngle - Math.PI) * unitSpace * row
 
@@ -208,9 +215,16 @@ export class Game extends Phaser.Scene {
             )
 
             Phaser.Actions.PlaceOnLine(chunkOfUnits, parallelLine)
+            chunkOfUnits.forEach( unit => {
+                const isoPoint = this.iso.projector.projectXY(unit)
+                unit.x = isoPoint.x
+                unit.y = isoPoint.y
+            })
+            chunkOfUnits.forEach( unit => unit.angle = lineAngle)
+            resultTargets.push(...chunkOfUnits)
         })
-        
-        return tmpTargets
+
+        return resultTargets
     }
 
     createWorld() {

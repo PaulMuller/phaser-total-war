@@ -116,11 +116,11 @@ export default class IsoPhysics {
    */
   anglesToXYZ(displayObjectBody, x, y, z) {
     // Spherical polar coordinates
-    var r = this.distanceToXYZ(displayObjectBody, x, y, z);
-    var theta = Math.atan2(y - displayObjectBody.y, x - displayObjectBody.x);
-    var phi   = Math.acos((z - displayObjectBody.z)/ r);
+    const r = this.distanceToXYZ(displayObjectBody, x, y, z)
+    const theta = Math.atan2(y - displayObjectBody.y, x - displayObjectBody.x)
+    const phi   = Math.acos((z - displayObjectBody.z) / r)
 
-    return {r:r,theta:theta,phi:phi};
+    return { r: r, theta: theta, phi: phi}
   }
 
   /**
@@ -221,11 +221,11 @@ export default class IsoPhysics {
     }
 
     if (maxTime > 0) {
-      //  We know how many pixels we need to move, but how fast?
-      speed = this.distanceToXYZ(displayObject.body, x, y ,z) / (maxTime / 1000);
+      speed = this.distanceToXYZ(displayObject.body, x, y, z) / (maxTime / 1000);
     }
-    var a = this.anglesToXYZ(displayObject.body, x, y,z);
-    var v = this.velocityFromAngles(a.theta,a.phi,speed);
+    const a = this.anglesToXYZ(displayObject.body, x, y, z);
+    const v = this.velocityFromAngles(a.theta, a.phi, speed);
+    if (v.z < 0.00000001) v.z = 0
 
     displayObject.body.velocity.copyFrom(v);
 

@@ -1,71 +1,172 @@
 import { getDirectionFromRad } from '../utils'
 import IsoSprite from '../plugins/IsometricProjector/IsoSprite'
+import Point3 from '../plugins/IsometricProjector/Point3'
 
-export default class UnitV4 extends IsoSprite{
-    constructor(scene, x, y, angle, unitType = 'goblin_spearman') {
-        super(scene, x, y, 0, unitType, 0)
+export default class UnitV4 extends IsoSprite {
+    constructor(scene, x, y, z = 0, angle, unitType = 'goblin_spearman') {
+        super(scene, x, y, z, unitType, 0)
         this.scene = scene
+        this.debugGraphics = scene.add.graphics()
+
+        this.debug = true
+
 
         this.scene.masterGroup.add(this)
         this.scene.isoPhysics.world.enable(this)
         this.body.collideWorldBounds = true
-        this.body.bounce.set(0.2, 0.2, 0)   
+        this.body.bounce.set(0.2, 0.2, 0)
+        // this.body.setSize(10,10,10,5,5,5)
+        this.body.offset.x = this.body.halfWidthX
+        this.body.offset.y = this.body.halfWidthY
 
-        const pluginKey = this.scene.sys.settings.map.isoPlugin
-        this.scene[pluginKey].systems.displayList.add(this)
-        this.scene[pluginKey].systems.updateList.add(this)
+        this.scene.iso.systems.displayList.add(this)
+        this.scene.iso.systems.updateList.add(this)
 
 
         this.unitType = unitType
-        this.play(`${unitType}-${getDirectionFromRad(angle)}-idle`)
-
         this.speed = 40
         this.target = null
+        this.angle = angle
+
+        this.play(`${unitType}-${getDirectionFromRad(angle)}-idle`)
     }
 
-    setTarget(target){
-        this.target = target
+    setTarget(target) {
+        this.target = this.scene.iso.projector.unproject(target)
+        this.target.angle = target.angle
     }
 
     stop() {
+        this.angle = this.target.angle
         this.target = null
+        this.body.velocity.x = 0
+        this.body.velocity.y = 0
+        this.play(`${this.unitType}-${getDirectionFromRad(this.angle)}-idle`, true)
     }
 
     move() {
-        this.setDepth(this.y)
+        // this.setDepth(this.isoY)
 
-        if(this.target) {
-            const angle = Phaser.Math.Angle.Between(
-                this.body.center.x, 
-                this.body.center.y, 
-                this.target.x, 
-                this.target.y
-            )
-    
-            const distance = Phaser.Math.Distance.Between(
-                this.body.center.x, 
-                this.body.center.y, 
-                this.target.x, 
-                this.target.y
-            )
-        
+        if (this.target) {
+            const distance = this.scene.isoPhysics.distanceBetween(this.body.position, this.target)
+
             if (distance < 2) {
-                this.body.velocity.x = 0
-                this.body.velocity.y = 0
-                this.play(`${this.unitType}-${getDirectionFromRad(this.target.angle || angle)}-idle`, true)
-            }else {
-                this.body.velocity.x = Math.cos(angle) * this.speed
-                this.body.velocity.y = Math.sin(angle) * this.speed
-                this.play(`${this.unitType}-${getDirectionFromRad(angle)}-rush`, true)
+                this.stop()
+            } else {
+                const targetAngle = this.scene.isoPhysics.moveToObject(this, this.target, this.speed)
+                this.play(`${this.unitType}-${getDirectionFromRad(targetAngle)}-rush`, true)
             }
-        }else {
+        } else {
             this.body.velocity.x = 0
             this.body.velocity.y = 0
         }
     }
 
     update(delta, time) {
-        this.move() 
-        console.log(this.body.velocity)
+        this.move()
+
+
+        if (this.debug) {
+            // this.body.debugRender(this.debugGraphics)
+            // return
+            this.debugGraphics.clear()
+            this.debugGraphics.lineStyle(1, 0x00ff00)
+            this.debugGraphics.fillStyle(0xff0000, 0.2)
+            this._debug(this.debugGraphics)
+            return
+            this.debugGraphics.clear()
+
+            this.debugGraphics.lineStyle(1, 0x0000ff)
+            this.debugGraphics.strokeRect(
+                this.x - this.originX * this.width,
+                this.y - this.originY * this.height,
+                this.width,
+                this.height
+            )
+
+            if (this.body) {
+                this.debugGraphics.lineStyle(1, 0x00ff00)
+                this.debugGraphics.strokeRect(
+                    this.body.position.x,
+                    this.body.position.y,
+                    this.body.width,
+                    this.body.height
+                )
+            }
+            if (this.target) {
+                this.debugGraphics.fillStyle(0xff0000)
+                this.debugGraphics.fillCircle(this.target.x, this.target.y, 5)
+            }
+
+        }
+    }
+
+
+    _debug(context) {
+        if (!this.isoBounds) {
+            return;
+        }
+
+        const filled = false;
+        
+
+        // const ss = 'rgba(0,255,0,0.4)';
+
+
+        var points = [],
+            corners = this.isoBounds.getCorners();
+
+        var posX = -this.scene.cameras.main.x;
+        var posY = -this.scene.cameras.main.y;
+
+        if (filled) {
+            points = [corners[1], corners[3], corners[2], corners[6], corners[4], corners[5], corners[1]];
+
+            points = points.map( (p) =>  {
+                var newPos = this.scene.iso.projector.project(p);
+                newPos.x += posX;
+                newPos.y += posY;
+                return newPos;
+            });
+            context.beginPath();
+            // context.fillStyle = color;
+            context.moveTo(points[0].x, points[0].y);
+
+            for (var i = 1; i < points.length; i++) {
+                context.lineTo(points[i].x, points[i].y);
+            }
+            context.fillPath();
+        } else {
+            points = corners.slice(0, corners.length);
+            points = points.map( p => {
+                var newPos = this.scene.iso.projector.project(p);
+                newPos.x += posX;
+                newPos.y += posY;
+                return newPos;
+            });
+
+            context.moveTo(points[0].x, points[0].y);
+            context.beginPath();
+            // context.strokeStyle = color;
+
+            context.lineTo(points[1].x, points[1].y);
+            context.lineTo(points[3].x, points[3].y);
+            context.lineTo(points[2].x, points[2].y);
+            context.lineTo(points[6].x, points[6].y);
+            context.lineTo(points[4].x, points[4].y);
+            context.lineTo(points[5].x, points[5].y);
+            context.lineTo(points[1].x, points[1].y);
+            context.lineTo(points[0].x, points[0].y);
+            context.lineTo(points[4].x, points[4].y);
+            context.moveTo(points[0].x, points[0].y);
+            context.lineTo(points[2].x, points[2].y);
+            context.moveTo(points[3].x, points[3].y);
+            context.lineTo(points[7].x, points[7].y);
+            context.lineTo(points[6].x, points[6].y);
+            context.moveTo(points[7].x, points[7].y);
+            context.lineTo(points[5].x, points[5].y);
+            context.stroke();
+            context.closePath()
+        }
     }
 }
