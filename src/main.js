@@ -2,7 +2,7 @@ import { Boot } from './scenes/Boot'
 import { Preloader } from './scenes/Preloader'
 import { MainMenu } from './scenes/MainMenu'
 import { Game } from './scenes/Game'
-import IsoPlugin, { IsoPhysics } from 'phaser3-plugin-isometric'
+import IsoPlugin, { IsoPhysics } from './plugins/IsometricProjector/IsoPlugin'
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig

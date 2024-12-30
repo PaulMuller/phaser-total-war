@@ -192,18 +192,22 @@ export default class IsoSprite extends Sprite {
       this._isoBounds = new Cube();
     }
 
-    var asx = Math.abs(this.scaleX);
-    var asy = Math.abs(this.scaleY);
+    const spriteWith   = Math.abs(this.width)
+    const spriteHeight = Math.abs(this.height)
+    const spriteOriginX = this.originX
+    const spriteOriginY = this.originY
+    const spriteScaleX = Math.abs(this.scaleX)
+    const spriteScaleY = Math.abs(this.scaleY)
 
-    this._isoBounds.widthX = Math.round(Math.abs(this.width) * 0.5) * asx;
-    this._isoBounds.widthY = Math.round(Math.abs(this.width) * 0.5) * asx;
-    this._isoBounds.height = Math.round(Math.abs(this.height) - (Math.abs(this.width) * 0.5)) * asy;
+    this._isoBounds.widthX = Math.round(spriteWith * 0.5) * spriteScaleX
+    this._isoBounds.widthY = Math.round(spriteWith * 0.5) * spriteScaleX
+    this._isoBounds.height = Math.round(spriteHeight - (spriteWith * 0.5)) * spriteScaleY
 
-    this._isoBounds.x = this.isoX + (this._isoBounds.widthX * -this.originX) + this._isoBounds.widthX * 0.5;
-    this._isoBounds.y = this.isoY + (this._isoBounds.widthY * this.originX) - this._isoBounds.widthY * 0.5;
-    this._isoBounds.z = this.isoZ - (Math.abs(this.height) * (1 - this.originY)) + (Math.abs(this.width * 0.5));
+    this._isoBounds.x = this.isoX + (this._isoBounds.widthX * -spriteOriginX) + this._isoBounds.widthX * 0.5
+    this._isoBounds.y = this.isoY + (this._isoBounds.widthY *  spriteOriginX) - this._isoBounds.widthY * 0.5
+    this._isoBounds.z = this.isoZ - (spriteHeight * (1 - spriteOriginY)) + (spriteWith * 0.5)
 
-    return this._isoBounds;
+    return this._isoBounds
   }
 }
 

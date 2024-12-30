@@ -49,7 +49,7 @@ export class Game extends Phaser.Scene {
         this.setupFormationPositioning()
 
         this.squads.push(
-            this.spawnSquad(10, { x1: 100, y1: 300, x2: 200, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
+            this.spawnSquad(1, { x1: 100, y1: 300, x2: 200, y2: 300 }, UNIT_NAMES.GOBLIN_SPEARMAN),
             // this.spawnSquad(19, { x1: 600, y1: 300, x2: 700, y2: 300 }, UNIT_NAMES.GOBLIN_BOWMAN),
         )
 

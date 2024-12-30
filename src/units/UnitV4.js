@@ -15,9 +15,9 @@ export default class UnitV4 extends IsoSprite {
         this.scene.isoPhysics.world.enable(this)
         this.body.collideWorldBounds = true
         this.body.bounce.set(0.2, 0.2, 0)
-        // this.body.setSize(10,10,10,5,5,5)
-        this.body.offset.x = this.body.halfWidthX
-        this.body.offset.y = this.body.halfWidthY
+        this.body.setSize(32 ,32 ,32 ,16 ,16 , 0)   
+        this.body.offset.x = 26
+        this.body.offset.y = 26
 
         this.scene.iso.systems.displayList.add(this)
         this.scene.iso.systems.updateList.add(this)
@@ -67,14 +67,13 @@ export default class UnitV4 extends IsoSprite {
 
 
         if (this.debug) {
-            // this.body.debugRender(this.debugGraphics)
-            // return
             this.debugGraphics.clear()
+   
             this.debugGraphics.lineStyle(1, 0x00ff00)
             this.debugGraphics.fillStyle(0xff0000, 0.2)
-            this._debug(this.debugGraphics)
-            return
-            this.debugGraphics.clear()
+            this.debugBody(this.debugGraphics)
+            // return
+            // this.debugGraphics.clear()
 
             this.debugGraphics.lineStyle(1, 0x0000ff)
             this.debugGraphics.strokeRect(
@@ -84,15 +83,37 @@ export default class UnitV4 extends IsoSprite {
                 this.height
             )
 
-            if (this.body) {
+            this.debugGraphics.fillCircle(
+                this.x,
+                this.y,
+                5
+            )
+
+            if(this.body.position && this.target) {
+                const start = this.scene.iso.projector.project(this.body.position)
+                const end = this.scene.iso.projector.project(this.target)
+
                 this.debugGraphics.lineStyle(1, 0x00ff00)
-                this.debugGraphics.strokeRect(
-                    this.body.position.x,
-                    this.body.position.y,
-                    this.body.width,
-                    this.body.height
-                )
+                this.debugGraphics.strokeLineShape({
+                    x1: start.x,
+                    y1: start.y,
+                    x2: end.x,
+                    y2: end.y
+                })
             }
+            
+            // if (this.body) {
+            //     this.debugGraphics.lineStyle(1, 0x00ff00)
+            //     this.debugGraphics.strokeRect(
+            //         this.body.position.x,
+            //         this.body.position.y,
+            //         this.body.widthX,
+            //         this.body.height
+            //     )
+            // }
+            return
+
+
             if (this.target) {
                 this.debugGraphics.fillStyle(0xff0000)
                 this.debugGraphics.fillCircle(this.target.x, this.target.y, 5)
@@ -102,40 +123,30 @@ export default class UnitV4 extends IsoSprite {
     }
 
 
-    _debug(context) {
-        if (!this.isoBounds) {
-            return;
-        }
+    debugBody(context, filled = false) {
+        if (!this.isoBounds) return
 
-        const filled = false;
-        
+        let points = []
+        let corners = this.body.getCorners()
 
-        // const ss = 'rgba(0,255,0,0.4)';
-
-
-        var points = [],
-            corners = this.isoBounds.getCorners();
-
-        var posX = -this.scene.cameras.main.x;
-        var posY = -this.scene.cameras.main.y;
+        const posX = -this.scene.cameras.main.x
+        const posY = -this.scene.cameras.main.y
 
         if (filled) {
-            points = [corners[1], corners[3], corners[2], corners[6], corners[4], corners[5], corners[1]];
+            points = [corners[1], corners[3], corners[2], corners[6], corners[4], corners[5], corners[1]]
 
             points = points.map( (p) =>  {
-                var newPos = this.scene.iso.projector.project(p);
-                newPos.x += posX;
-                newPos.y += posY;
-                return newPos;
-            });
+                let newPos = this.scene.iso.projector.project(p)
+                newPos.x += posX
+                newPos.y += posY
+                return newPos
+            })
             context.beginPath();
-            // context.fillStyle = color;
-            context.moveTo(points[0].x, points[0].y);
-
-            for (var i = 1; i < points.length; i++) {
-                context.lineTo(points[i].x, points[i].y);
+            context.moveTo(points[0].x, points[0].y)
+            for (const i = 1; i < points.length; i++) {
+                context.lineTo(points[i].x, points[i].y)
             }
-            context.fillPath();
+            context.fillPath()
         } else {
             points = corners.slice(0, corners.length);
             points = points.map( p => {
